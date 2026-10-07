@@ -1,409 +1,273 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>Deriv Last Digit Trader</title>
-
-<style>
-*{box-sizing:border-box}
-
-body{
-  margin:0;
-  font-family:Arial,sans-serif;
-  background:#0b1020;
-  color:#fff;
-  padding:20px;
-}
-
-.container{
-  max-width:500px;
-  margin:auto;
-  background:#151c31;
-  padding:25px;
-  border-radius:18px;
-  text-align:center;
-}
-
-h1{
-  margin-top:0;
-}
-
-.label{
-  color:#aab3cc;
-  margin-top:20px;
-}
-
-#digit{
-  font-size:100px;
-  font-weight:bold;
-  margin:10px 0;
-}
-
-#status{
-  min-height:25px;
-  margin:15px 0;
-}
-
-input,select,button{
-  width:100%;
-  padding:15px;
-  margin-top:12px;
-  border-radius:10px;
-  border:0;
-  font-size:16px;
-}
-
-button{
-  font-weight:bold;
-  cursor:pointer;
-}
-
-#analyze{
-  background:#2563eb;
-  color:white;
-}
-
-#trade{
-  background:#16a34a;
-  color:white;
-}
-
-button:disabled{
-  background:#555!important;
-  cursor:not-allowed;
-}
-
-.info{
-  background:#0d1426;
-  padding:15px;
-  border-radius:10px;
-  margin-top:20px;
-  text-align:left;
-}
-</style>
-</head>
-
-<body>
-
-<div class="container">
-
-<h1>LAST DIGIT TRADER</h1>
-
-<div class="label">LIVE LAST DIGIT</div>
-
-<div id="digit">-</div>
-
-<div id="status">Connecting...</div>
-
-<select id="symbol">
-<option value="1HZ100V">Volatility 100 (1s)</option>
-<option value="1HZ75V">Volatility 75 (1s)</option>
-<option value="1HZ50V">Volatility 50 (1s)</option>
-<option value="1HZ25V">Volatility 25 (1s)</option>
-<option value="1HZ10V">Volatility 10 (1s)</option>
-</select>
-
-<input
- id="stake"
- type="number"
- value="1"
- min="0.35"
- step="0.01"
- placeholder="Stake"
-/>
-
-<button id="analyze">
-ANALYZE CURRENT DIGIT
-</button>
-
-<button id="trade" disabled>
-TRADE CURRENT DIGIT ONCE
-</button>
-
-<div class="info">
-
-<div>
-<strong>Analyzed digit:</strong>
-<span id="analyzed">None</span>
-</div>
-
-<div style="margin-top:10px">
-<strong>Trade status:</strong>
-<span id="tradeStatus">Waiting</span>
-</div>
-
-</div>
-
-</div>
-
-
 <script>
 
-/* =====================================================
-   SETTINGS
-   ===================================================== */
-
-/*
-   PUT YOUR SECURE TRADING BACKEND URL HERE.
-
-   Example:
-
-   const BACKEND_URL =
-   "https://your-server.example.com";
-
-   DO NOT PUT YOUR DERIV TOKEN HERE.
-*/
-
-const BACKEND_URL = "YOUR_BACKEND_URL";
-
-
-/* =====================================================
-   VARIABLES
-   ===================================================== */
-
 let socket = null;
-
 let currentDigit = null;
-
 let analyzedDigit = null;
-
 let tradeBusy = false;
 
+const symbolSelect = document.getElementById("symbol");
+const digitDisplay = document.getElementById("digit");
+const statusDisplay = document.getElementById("status");
+const analyzedDisplay = document.getElementById("analyzed");
+const tradeStatus = document.getElementById("tradeStatus");
+const analyzeButton = document.getElementById("analyze");
+const tradeButton = document.getElementById("trade");
 
-/* =====================================================
+
+/* ================================
    GET LAST DIGIT
-   ===================================================== */
+================================ */
 
-function getLastDigit(value){
+function getLastDigit(price) {
 
-    let text = String(value);
+    const text = String(price);
 
-    /*
-       Remove decimal point.
-    */
+    const parts = text.split(".");
 
-    text = text.replace(".", "");
+    if (parts.length === 1) {
+        return Number(text[text.length - 1]);
+    }
 
-    /*
-       Get the final number.
-    */
+    const decimals = parts[1];
 
-    return Number(text[text.length - 1]);
+    return Number(decimals[decimals.length - 1]);
 }
 
 
-/* =====================================================
-   CONNECT TO DERIV LIVE MARKET
-   ===================================================== */
+/* ================================
+   CONNECT TO DERIV
+================================ */
 
-function connect(){
+function connectToDeriv() {
+
+    statusDisplay.textContent =
+        "Connecting to Deriv...";
 
     socket = new WebSocket(
-        "wss://ws.derivws.com/websockets/v3?app_id=1089"
+        "wss://api.derivws.com/trading/v1/options/ws/public"
     );
 
 
-    socket.onopen = function(){
+    socket.onopen = function () {
 
-        document.getElementById("status").textContent =
-            "Connected";
+        statusDisplay.textContent =
+            "Connected to Deriv";
 
-        subscribe();
+        subscribeToTicks();
 
     };
 
 
-    socket.onmessage = function(event){
+    socket.onmessage = function (event) {
 
-        const data = JSON.parse(event.data);
+        try {
+
+            const data = JSON.parse(event.data);
+
+            console.log("DERIV:", data);
 
 
-        if(data.msg_type !== "tick"){
-            return;
+            if (data.error) {
+
+                statusDisplay.textContent =
+                    "Deriv error: " +
+                    data.error.message;
+
+                return;
+            }
+
+
+            if (data.msg_type === "tick") {
+
+                const price =
+                    data.tick.quote;
+
+
+                currentDigit =
+                    getLastDigit(price);
+
+
+                digitDisplay.textContent =
+                    currentDigit;
+
+
+                statusDisplay.textContent =
+                    "Live";
+
+
+            }
+
+        } catch (error) {
+
+            console.error(error);
+
         }
 
-
-        const quote = data.tick.quote;
-
-
-        /*
-           Get the live last digit.
-        */
-
-        currentDigit = getLastDigit(quote);
-
-
-        /*
-           Display it.
-        */
-
-        document.getElementById("digit").textContent =
-            currentDigit;
-
     };
 
 
-    socket.onerror = function(){
+    socket.onerror = function (error) {
 
-        document.getElementById("status").textContent =
+        console.error(
+            "WebSocket error:",
+            error
+        );
+
+        statusDisplay.textContent =
             "Connection error";
 
     };
 
 
-    socket.onclose = function(){
+    socket.onclose = function () {
 
-        document.getElementById("status").textContent =
-            "Disconnected. Reconnecting...";
+        statusDisplay.textContent =
+            "Disconnected - reconnecting...";
 
-        setTimeout(connect,3000);
+
+        setTimeout(
+            connectToDeriv,
+            3000
+        );
 
     };
 
 }
 
 
-/* =====================================================
-   SUBSCRIBE TO MARKET
-   ===================================================== */
+/* ================================
+   SUBSCRIBE TO TICKS
+================================ */
 
-function subscribe(){
+function subscribeToTicks() {
 
     const symbol =
-        document.getElementById("symbol").value;
+        symbolSelect.value;
 
 
-    socket.send(JSON.stringify({
+    if (
+        !socket ||
+        socket.readyState !== WebSocket.OPEN
+    ) {
+        return;
+    }
 
-        ticks:symbol,
 
-        subscribe:1
+    socket.send(
+        JSON.stringify({
 
-    }));
+            ticks: symbol,
+
+            subscribe: 1
+
+        })
+    );
 
 }
 
 
-/* =====================================================
+/* ================================
    CHANGE MARKET
-   ===================================================== */
+================================ */
 
-document.getElementById("symbol").addEventListener(
+symbolSelect.addEventListener(
     "change",
-    function(){
+    function () {
 
-        if(
-            socket &&
-            socket.readyState === WebSocket.OPEN
-        ){
+        currentDigit = null;
 
-            subscribe();
+        digitDisplay.textContent = "-";
 
-        }
+        subscribeToTicks();
 
     }
 );
 
 
-/* =====================================================
+/* ================================
    ANALYZE
-   ===================================================== */
+================================ */
 
-document.getElementById("analyze").onclick =
-function(){
+analyzeButton.onclick = function () {
 
-    if(currentDigit === null){
+    if (currentDigit === null) {
 
-        document.getElementById("status").textContent =
-            "Waiting for live digit...";
+        statusDisplay.textContent =
+            "Waiting for a live digit.";
 
         return;
-
     }
 
 
     /*
-       THIS IS THE IMPORTANT PART.
-
-       The exact digit currently displayed
-       becomes the digit selected for trading.
+       SAVE THE EXACT DIGIT
     */
 
-    analyzedDigit = currentDigit;
+    analyzedDigit =
+        currentDigit;
 
 
-    document.getElementById("analyzed").textContent =
+    analyzedDisplay.textContent =
         analyzedDigit;
 
 
-    document.getElementById("tradeStatus").textContent =
-        "Ready to trade";
+    tradeStatus.textContent =
+        "Ready";
 
 
-    document.getElementById("status").textContent =
-        "Digit " + analyzedDigit +
+    statusDisplay.textContent =
+        "Digit " +
+        analyzedDigit +
         " selected";
 
 
-    /*
-       Enable Trade.
-    */
-
-    document.getElementById("trade").disabled =
-        false;
+    tradeButton.disabled = false;
 
 };
 
 
-/* =====================================================
-   TRADE EXACT ANALYZED DIGIT
-   ===================================================== */
+/* ================================
+   TRADE
+================================ */
 
-document.getElementById("trade").onclick =
-async function(){
+tradeButton.onclick =
+async function () {
 
-    /*
-       Stop double clicks.
-    */
+    if (tradeBusy) {
+        return;
+    }
 
-    if(tradeBusy){
+
+    if (analyzedDigit === null) {
+
+        statusDisplay.textContent =
+            "Analyze first.";
+
         return;
     }
 
 
     /*
-       Make sure Analyze was pressed.
-    */
-
-    if(analyzedDigit === null){
-
-        document.getElementById("status").textContent =
-            "Analyze a digit first.";
-
-        return;
-
-    }
-
-
-    /*
-       LOCK IMMEDIATELY.
+       LOCK BUTTON
     */
 
     tradeBusy = true;
 
-    document.getElementById("trade").disabled =
-        true;
+    tradeButton.disabled = true;
 
 
     /*
        FREEZE THE EXACT DIGIT.
 
-       If Analyze selected 5,
-       digitToTrade remains 5.
+       Example:
 
-       Even if the next tick becomes 7,
-       this trade remains 5.
+       Analyze = 5
+
+       Even if live screen changes:
+
+       5 → 7 → 2
+
+       THIS TRADE REMAINS 5.
     */
 
     const digitToTrade =
@@ -411,7 +275,7 @@ async function(){
 
 
     const symbol =
-        document.getElementById("symbol").value;
+        symbolSelect.value;
 
 
     const stake =
@@ -420,43 +284,43 @@ async function(){
         );
 
 
-    document.getElementById("status").textContent =
-        "Trading DIGITMATCH " +
+    statusDisplay.textContent =
+        "Sending DIGITMATCH " +
         digitToTrade +
         "...";
 
 
-    document.getElementById("tradeStatus").textContent =
+    tradeStatus.textContent =
         "Sending";
 
 
-    try{
-
-        /*
-           Send the exact selected digit
-           to the secure trading server.
-        */
+    try {
 
         const response =
             await fetch(
-                BACKEND_URL + "/trade",
+                "YOUR_BACKEND_URL/trade",
                 {
-                    method:"POST",
 
-                    headers:{
+                    method: "POST",
+
+                    headers: {
                         "Content-Type":
                             "application/json"
                     },
 
-                    body:JSON.stringify({
+                    body: JSON.stringify({
 
-                        digit:digitToTrade,
+                        digit:
+                            digitToTrade,
 
-                        symbol:symbol,
+                        symbol:
+                            symbol,
 
-                        stake:stake
+                        stake:
+                            stake
 
                     })
+
                 }
             );
 
@@ -465,7 +329,7 @@ async function(){
             await response.json();
 
 
-        if(!response.ok){
+        if (!response.ok) {
 
             throw new Error(
                 result.error ||
@@ -475,66 +339,54 @@ async function(){
         }
 
 
-        document.getElementById("status").textContent =
-            "TRADE SENT: DIGITMATCH " +
-            digitToTrade;
+        statusDisplay.textContent =
+            "TRADED DIGIT " +
+            digitToTrade +
+            " ONCE";
 
 
-        document.getElementById("tradeStatus").textContent =
-            "Trade completed";
+        tradeStatus.textContent =
+            "Completed";
 
 
         /*
-           Clear the selected digit.
-
-           Another Analyze is required
-           before another trade.
+           FORCE USER TO ANALYZE
+           THE NEXT DIGIT BEFORE
+           ANOTHER TRADE.
         */
 
         analyzedDigit = null;
 
-        document.getElementById("analyzed").textContent =
+        analyzedDisplay.textContent =
             "None";
 
-    }
+
+    } catch (error) {
+
+        console.error(error);
+
+        statusDisplay.textContent =
+            "Trade error: " +
+            error.message;
 
 
-    catch(error){
-
-        document.getElementById("status").textContent =
-            "ERROR: " + error.message;
-
-
-        document.getElementById("tradeStatus").textContent =
+        tradeStatus.textContent =
             "Failed";
 
     }
 
 
-    finally{
+    tradeBusy = false;
 
-        tradeBusy = false;
-
-        /*
-           Keep Trade disabled until
-           another digit is analyzed.
-        */
-
-        document.getElementById("trade").disabled =
-            true;
-
-    }
+    tradeButton.disabled = true;
 
 };
 
 
-/* =====================================================
+/* ================================
    START
-   ===================================================== */
+================================ */
 
-connect();
+connectToDeriv();
 
 </script>
-
-</body>
-</html>
