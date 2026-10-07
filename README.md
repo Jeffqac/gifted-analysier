@@ -2,288 +2,136 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Deriv Digit Match Analyzer</title>
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Deriv Last Digit Trader</title>
 
 <style>
 *{box-sizing:border-box}
 
 body{
   margin:0;
-  background:#080d18;
-  color:#fff;
   font-family:Arial,sans-serif;
-  padding:15px
+  background:#0b1020;
+  color:#fff;
+  padding:20px;
 }
 
-.app{
-  max-width:700px;
-  margin:auto
+.container{
+  max-width:500px;
+  margin:auto;
+  background:#151c31;
+  padding:25px;
+  border-radius:18px;
+  text-align:center;
 }
 
 h1{
-  text-align:center;
-  margin:5px 0
+  margin-top:0;
 }
 
-.subtitle{
-  text-align:center;
-  color:#9da8bd;
-  margin-bottom:18px
+.label{
+  color:#aab3cc;
+  margin-top:20px;
 }
 
-.card{
-  background:#121a2b;
-  border-radius:15px;
-  padding:16px;
-  margin-bottom:14px
+#digit{
+  font-size:100px;
+  font-weight:bold;
+  margin:10px 0;
 }
 
-label{
-  display:block;
-  margin-bottom:7px
+#status{
+  min-height:25px;
+  margin:15px 0;
 }
 
-select,button{
+input,select,button{
   width:100%;
   padding:15px;
-  border:0;
+  margin-top:12px;
   border-radius:10px;
-  font-size:16px
-}
-
-select{
-  background:#222d46;
-  color:white;
-  margin-bottom:12px
+  border:0;
+  font-size:16px;
 }
 
 button{
-  background:#00c878;
-  color:white;
-  font-weight:bold
-}
-
-button:active{
-  transform:scale(.97)
-}
-
-.status{
-  background:#222d46;
-  padding:13px;
-  border-radius:10px;
-  text-align:center;
   font-weight:bold;
-  margin-bottom:14px
+  cursor:pointer;
 }
 
-.match-title{
-  text-align:center;
-  color:#9da8bd;
-  font-size:13px
+#analyze{
+  background:#2563eb;
+  color:white;
 }
 
-.match{
-  text-align:center;
-  font-size:70px;
-  font-weight:bold
+#trade{
+  background:#16a34a;
+  color:white;
 }
 
-.center{
-  text-align:center
+button:disabled{
+  background:#555!important;
+  cursor:not-allowed;
 }
 
-.grid{
-  display:grid;
-  grid-template-columns:repeat(5,1fr);
-  gap:7px;
-  margin-top:12px
-}
-
-.digit{
-  background:#202b43;
-  padding:10px 3px;
-  border-radius:8px;
-  text-align:center
-}
-
-.digit b{
-  display:block;
-  font-size:18px
-}
-
-.digit span{
-  color:#aab5ca;
-  font-size:11px
-}
-
-.row{
-  display:flex;
-  justify-content:space-between;
-  padding:8px 0;
-  border-bottom:1px solid #263149
-}
-
-.value{
-  font-weight:bold
-}
-
-.recent{
-  background:#080d18;
-  border-radius:9px;
-  padding:12px;
-  margin-top:10px;
-  word-break:break-word;
-  line-height:1.8
-}
-
-.small{
-  color:#8e9ab0;
-  font-size:12px;
-  line-height:1.5
+.info{
+  background:#0d1426;
+  padding:15px;
+  border-radius:10px;
+  margin-top:20px;
+  text-align:left;
 }
 </style>
 </head>
 
 <body>
 
-<div class="app">
+<div class="container">
 
-<h1>DERIV DIGIT MATCH</h1>
+<h1>LAST DIGIT TRADER</h1>
 
-<div class="subtitle">
-Live Tick & Digit Analyzer
-</div>
+<div class="label">LIVE LAST DIGIT</div>
 
+<div id="digit">-</div>
 
-<div class="card">
+<div id="status">Connecting...</div>
 
-<label>Select Market</label>
-
-<select id="market">
-
-<option value="1HZ10V">
-Volatility 10 (1s)
-</option>
-
-<option value="1HZ25V">
-Volatility 25 (1s)
-</option>
-
-<option value="1HZ50V">
-Volatility 50 (1s)
-</option>
-
-<option value="1HZ75V">
-Volatility 75 (1s)
-</option>
-
-<option value="1HZ100V" selected>
-Volatility 100 (1s)
-</option>
-
+<select id="symbol">
+<option value="1HZ100V">Volatility 100 (1s)</option>
+<option value="1HZ75V">Volatility 75 (1s)</option>
+<option value="1HZ50V">Volatility 50 (1s)</option>
+<option value="1HZ25V">Volatility 25 (1s)</option>
+<option value="1HZ10V">Volatility 10 (1s)</option>
 </select>
 
+<input
+ id="stake"
+ type="number"
+ value="1"
+ min="0.35"
+ step="0.01"
+ placeholder="Stake"
+/>
 
-<button
-type="button"
-onclick="startAnalysis()">
-
-ANALYZE
-
+<button id="analyze">
+ANALYZE CURRENT DIGIT
 </button>
 
+<button id="trade" disabled>
+TRADE CURRENT DIGIT ONCE
+</button>
+
+<div class="info">
+
+<div>
+<strong>Analyzed digit:</strong>
+<span id="analyzed">None</span>
 </div>
 
-
-<div id="status" class="status">
-READY — PRESS ANALYZE
+<div style="margin-top:10px">
+<strong>Trade status:</strong>
+<span id="tradeStatus">Waiting</span>
 </div>
-
-
-<div class="card">
-
-<div class="match-title">
-MATCH CANDIDATE
-</div>
-
-<div id="match" class="match">
-—
-</div>
-
-<div id="signal" class="center">
-Waiting for ticks...
-</div>
-
-</div>
-
-
-<div class="card">
-
-<div class="row">
-<span>Ticks</span>
-<span id="ticks" class="value">0</span>
-</div>
-
-<div class="row">
-<span>Last Price</span>
-<span id="price" class="value">—</span>
-</div>
-
-<div class="row">
-<span>Last Digit</span>
-<span id="lastDigit" class="value">—</span>
-</div>
-
-<div class="row">
-<span>Latest Jump</span>
-<span id="jump" class="value">—</span>
-</div>
-
-<div class="row">
-<span>Average Jump</span>
-<span id="avgJump" class="value">—</span>
-</div>
-
-</div>
-
-
-<div class="card">
-
-<b>Digit Frequencies</b>
-
-<div class="grid">
-
-<div class="digit"><b id="p0">0%</b><span>0</span></div>
-<div class="digit"><b id="p1">0%</b><span>1</span></div>
-<div class="digit"><b id="p2">0%</b><span>2</span></div>
-<div class="digit"><b id="p3">0%</b><span>3</span></div>
-<div class="digit"><b id="p4">0%</b><span>4</span></div>
-<div class="digit"><b id="p5">0%</b><span>5</span></div>
-<div class="digit"><b id="p6">0%</b><span>6</span></div>
-<div class="digit"><b id="p7">0%</b><span>7</span></div>
-<div class="digit"><b id="p8">0%</b><span>8</span></div>
-<div class="digit"><b id="p9">0%</b><span>9</span></div>
-
-</div>
-
-</div>
-
-
-<div class="card">
-
-<b>Recent Digits</b>
-
-<div id="recent" class="recent">
-Waiting...
-</div>
-
-</div>
-
-
-<div class="card small">
-
-This analyzer reads live market ticks and calculates observed digit frequencies and jump statistics. The match candidate is a statistical result, not a guarantee of the next digit.
 
 </div>
 
@@ -292,529 +140,399 @@ This analyzer reads live market ticks and calculates observed digit frequencies 
 
 <script>
 
-let ws = null;
+/* =====================================================
+   SETTINGS
+   ===================================================== */
 
-let digits = [];
+/*
+   PUT YOUR SECURE TRADING BACKEND URL HERE.
 
-let prices = [];
+   Example:
 
-let tickCount = 0;
+   const BACKEND_URL =
+   "https://your-server.example.com";
 
-let endpointNumber = 0;
+   DO NOT PUT YOUR DERIV TOKEN HERE.
+*/
 
-let fallbackTimer = null;
-
-
-/* =====================================
-   START
-===================================== */
-
-function startAnalysis(){
-
-  const status =
-    document.getElementById("status");
-
-  const market =
-    document.getElementById("market").value;
+const BACKEND_URL = "YOUR_BACKEND_URL";
 
 
-  /* Immediate button response */
+/* =====================================================
+   VARIABLES
+   ===================================================== */
 
-  status.innerHTML =
-    "STARTING ANALYSIS...";
+let socket = null;
 
+let currentDigit = null;
 
-  document.getElementById("signal").innerHTML =
-    "Preparing live connection...";
+let analyzedDigit = null;
 
-
-  document.getElementById("match").innerHTML =
-    "—";
-
-
-  digits = [];
-  prices = [];
-  tickCount = 0;
+let tradeBusy = false;
 
 
-  updateScreen();
+/* =====================================================
+   GET LAST DIGIT
+   ===================================================== */
 
+function getLastDigit(value){
 
-  if(ws){
+    let text = String(value);
 
-    try{
-      ws.close();
-    }catch(e){}
+    /*
+       Remove decimal point.
+    */
 
-  }
+    text = text.replace(".", "");
 
+    /*
+       Get the final number.
+    */
 
-  /* Start with current Deriv public endpoint */
-
-  endpointNumber = 1;
-
-  connectToDeriv(market);
-
+    return Number(text[text.length - 1]);
 }
 
 
-/* =====================================
-   CONNECT
-===================================== */
+/* =====================================================
+   CONNECT TO DERIV LIVE MARKET
+   ===================================================== */
 
-function connectToDeriv(market){
+function connect(){
 
-  const status =
-    document.getElementById("status");
-
-  let url;
-
-
-  if(endpointNumber === 1){
-
-    url =
-      "wss://api.derivws.com/trading/v1/options/ws/public";
-
-    status.innerHTML =
-      "CONNECTING — CURRENT DERIV SERVER...";
-
-  }else{
-
-    url =
-      "wss://ws.binaryws.com/websockets/v3";
-
-    status.innerHTML =
-      "TRYING DERIV BACKUP SERVER...";
-
-  }
-
-
-  try{
-
-    ws =
-      new WebSocket(url);
-
-  }catch(error){
-
-    tryBackup(market);
-
-    return;
-
-  }
-
-
-  let connected = false;
-
-
-  ws.onopen = function(){
-
-    connected = true;
-
-
-    if(fallbackTimer){
-
-      clearTimeout(fallbackTimer);
-
-    }
-
-
-    status.innerHTML =
-      "CONNECTED — SCANNING";
-
-
-    document.getElementById("signal").innerHTML =
-      "Receiving live " + market + " ticks...";
-
-
-    /* Subscribe to ticks */
-
-    ws.send(JSON.stringify({
-
-      ticks:market,
-
-      subscribe:1,
-
-      req_id:100
-
-    }));
-
-  };
-
-
-  /*
-     If the connection opens but
-     no useful data arrives, the
-     backup will be tried.
-  */
-
-  fallbackTimer =
-    setTimeout(function(){
-
-      if(
-        !connected ||
-        tickCount === 0
-      ){
-
-        if(ws){
-
-          try{
-            ws.close();
-          }catch(e){}
-
-        }
-
-        tryBackup(market);
-
-      }
-
-    },7000);
-
-
-  ws.onmessage = function(event){
-
-    let data;
-
-
-    try{
-
-      data =
-        JSON.parse(event.data);
-
-    }catch(e){
-
-      return;
-
-    }
-
-
-    if(data.error){
-
-      document.getElementById("signal").innerHTML =
-        data.error.message;
-
-      return;
-
-    }
-
-
-    if(
-      data.msg_type === "tick" &&
-      data.tick
-    ){
-
-      readTick(data.tick);
-
-    }
-
-  };
-
-
-  ws.onerror = function(){
-
-    if(!connected){
-
-      tryBackup(market);
-
-    }else{
-
-      status.innerHTML =
-        "CONNECTION ERROR";
-
-    }
-
-  };
-
-
-  ws.onclose = function(){
-
-    if(
-      !connected &&
-      tickCount === 0
-    ){
-
-      tryBackup(market);
-
-    }
-
-  };
-
-}
-
-
-/* =====================================
-   BACKUP
-===================================== */
-
-function tryBackup(market){
-
-  if(endpointNumber === 1){
-
-    endpointNumber = 2;
-
-    setTimeout(function(){
-
-      connectToDeriv(market);
-
-    },500);
-
-  }else{
-
-    document.getElementById("status").innerHTML =
-      "COULD NOT CONNECT TO DERIV";
-
-    document.getElementById("signal").innerHTML =
-      "Both public connections failed. Check your internet connection or network WebSocket blocking.";
-
-  }
-
-}
-
-
-/* =====================================
-   READ TICK
-===================================== */
-
-function readTick(tick){
-
-  const price =
-    Number(tick.quote);
-
-
-  if(!Number.isFinite(price)){
-    return;
-  }
-
-
-  /*
-    Deriv's tick response provides
-    quote as the current price.
-  */
-
-  const text =
-    String(tick.quote);
-
-
-  const cleaned =
-    text.replace(".","");
-
-
-  const digit =
-    Number(
-      cleaned.slice(-1)
+    socket = new WebSocket(
+        "wss://ws.derivws.com/websockets/v3?app_id=1089"
     );
 
 
-  if(
-    !Number.isInteger(digit)
-  ){
+    socket.onopen = function(){
 
-    return;
+        document.getElementById("status").textContent =
+            "Connected";
 
-  }
+        subscribe();
 
-
-  digits.push(digit);
-
-  prices.push(price);
-
-  tickCount++;
+    };
 
 
-  if(digits.length > 200){
+    socket.onmessage = function(event){
 
-    digits.shift();
-
-  }
+        const data = JSON.parse(event.data);
 
 
-  if(prices.length > 200){
-
-    prices.shift();
-
-  }
+        if(data.msg_type !== "tick"){
+            return;
+        }
 
 
-  updateScreen();
+        const quote = data.tick.quote;
 
-  analyzeDigits();
+
+        /*
+           Get the live last digit.
+        */
+
+        currentDigit = getLastDigit(quote);
+
+
+        /*
+           Display it.
+        */
+
+        document.getElementById("digit").textContent =
+            currentDigit;
+
+    };
+
+
+    socket.onerror = function(){
+
+        document.getElementById("status").textContent =
+            "Connection error";
+
+    };
+
+
+    socket.onclose = function(){
+
+        document.getElementById("status").textContent =
+            "Disconnected. Reconnecting...";
+
+        setTimeout(connect,3000);
+
+    };
 
 }
 
 
-/* =====================================
-   SCREEN
-===================================== */
+/* =====================================================
+   SUBSCRIBE TO MARKET
+   ===================================================== */
 
-function updateScreen(){
+function subscribe(){
 
-  document.getElementById("ticks").innerHTML =
-    tickCount;
-
-
-  if(prices.length){
-
-    document.getElementById("price").innerHTML =
-      prices[prices.length-1];
+    const symbol =
+        document.getElementById("symbol").value;
 
 
-    document.getElementById("lastDigit").innerHTML =
-      digits[digits.length-1];
+    socket.send(JSON.stringify({
 
-  }
+        ticks:symbol,
 
+        subscribe:1
 
-  if(prices.length >= 2){
+    }));
 
-    const n =
-      prices.length;
-
-
-    const jump =
-      Math.abs(
-        prices[n-1] -
-        prices[n-2]
-      );
+}
 
 
-    document.getElementById("jump").innerHTML =
-      jump.toFixed(5);
+/* =====================================================
+   CHANGE MARKET
+   ===================================================== */
+
+document.getElementById("symbol").addEventListener(
+    "change",
+    function(){
+
+        if(
+            socket &&
+            socket.readyState === WebSocket.OPEN
+        ){
+
+            subscribe();
+
+        }
+
+    }
+);
 
 
-    let total = 0;
+/* =====================================================
+   ANALYZE
+   ===================================================== */
+
+document.getElementById("analyze").onclick =
+function(){
+
+    if(currentDigit === null){
+
+        document.getElementById("status").textContent =
+            "Waiting for live digit...";
+
+        return;
+
+    }
 
 
-    for(
-      let i=1;
-      i<prices.length;
-      i++
-    ){
+    /*
+       THIS IS THE IMPORTANT PART.
 
-      total +=
-        Math.abs(
-          prices[i] -
-          prices[i-1]
+       The exact digit currently displayed
+       becomes the digit selected for trading.
+    */
+
+    analyzedDigit = currentDigit;
+
+
+    document.getElementById("analyzed").textContent =
+        analyzedDigit;
+
+
+    document.getElementById("tradeStatus").textContent =
+        "Ready to trade";
+
+
+    document.getElementById("status").textContent =
+        "Digit " + analyzedDigit +
+        " selected";
+
+
+    /*
+       Enable Trade.
+    */
+
+    document.getElementById("trade").disabled =
+        false;
+
+};
+
+
+/* =====================================================
+   TRADE EXACT ANALYZED DIGIT
+   ===================================================== */
+
+document.getElementById("trade").onclick =
+async function(){
+
+    /*
+       Stop double clicks.
+    */
+
+    if(tradeBusy){
+        return;
+    }
+
+
+    /*
+       Make sure Analyze was pressed.
+    */
+
+    if(analyzedDigit === null){
+
+        document.getElementById("status").textContent =
+            "Analyze a digit first.";
+
+        return;
+
+    }
+
+
+    /*
+       LOCK IMMEDIATELY.
+    */
+
+    tradeBusy = true;
+
+    document.getElementById("trade").disabled =
+        true;
+
+
+    /*
+       FREEZE THE EXACT DIGIT.
+
+       If Analyze selected 5,
+       digitToTrade remains 5.
+
+       Even if the next tick becomes 7,
+       this trade remains 5.
+    */
+
+    const digitToTrade =
+        analyzedDigit;
+
+
+    const symbol =
+        document.getElementById("symbol").value;
+
+
+    const stake =
+        Number(
+            document.getElementById("stake").value
         );
 
-    }
+
+    document.getElementById("status").textContent =
+        "Trading DIGITMATCH " +
+        digitToTrade +
+        "...";
 
 
-    const average =
-      total /
-      (prices.length-1);
+    document.getElementById("tradeStatus").textContent =
+        "Sending";
 
 
-    document.getElementById("avgJump").innerHTML =
-      average.toFixed(5);
+    try{
 
-  }
+        /*
+           Send the exact selected digit
+           to the secure trading server.
+        */
 
+        const response =
+            await fetch(
+                BACKEND_URL + "/trade",
+                {
+                    method:"POST",
 
-  document.getElementById("recent").innerHTML =
-    digits
-      .slice(-50)
-      .join(" ");
+                    headers:{
+                        "Content-Type":
+                            "application/json"
+                    },
 
-}
+                    body:JSON.stringify({
 
+                        digit:digitToTrade,
 
-/* =====================================
-   DIGIT ANALYSIS
-===================================== */
+                        symbol:symbol,
 
-function analyzeDigits(){
+                        stake:stake
 
-  if(digits.length < 10){
-
-    document.getElementById("signal").innerHTML =
-      "SCANNING — " +
-      digits.length +
-      "/10 ticks";
-
-    return;
-
-  }
-
-
-  const count =
-    [0,0,0,0,0,0,0,0,0,0];
+                    })
+                }
+            );
 
 
-  for(
-    let i=0;
-    i<digits.length;
-    i++
-  ){
-
-    count[digits[i]]++;
-
-  }
+        const result =
+            await response.json();
 
 
-  const total =
-    digits.length;
+        if(!response.ok){
+
+            throw new Error(
+                result.error ||
+                "Trade failed"
+            );
+
+        }
 
 
-  let bestDigit = 0;
-
-  let bestCount = count[0];
-
-
-  for(
-    let i=0;
-    i<10;
-    i++
-  ){
-
-    const percentage =
-      (count[i]/total)*100;
+        document.getElementById("status").textContent =
+            "TRADE SENT: DIGITMATCH " +
+            digitToTrade;
 
 
-    document.getElementById(
-      "p"+i
-    ).innerHTML =
-      percentage.toFixed(1)+"%";
+        document.getElementById("tradeStatus").textContent =
+            "Trade completed";
 
 
-    if(
-      count[i] > bestCount
-    ){
+        /*
+           Clear the selected digit.
 
-      bestCount =
-        count[i];
+           Another Analyze is required
+           before another trade.
+        */
 
-      bestDigit =
-        i;
+        analyzedDigit = null;
+
+        document.getElementById("analyzed").textContent =
+            "None";
 
     }
 
-  }
+
+    catch(error){
+
+        document.getElementById("status").textContent =
+            "ERROR: " + error.message;
 
 
-  const score =
-    (bestCount/total)*100;
+        document.getElementById("tradeStatus").textContent =
+            "Failed";
+
+    }
 
 
-  document.getElementById("match").innerHTML =
-    bestDigit;
+    finally{
+
+        tradeBusy = false;
+
+        /*
+           Keep Trade disabled until
+           another digit is analyzed.
+        */
+
+        document.getElementById("trade").disabled =
+            true;
+
+    }
+
+};
 
 
-  document.getElementById("signal").innerHTML =
-    "STRONGEST OBSERVED DIGIT: " +
-    bestDigit +
-    " — " +
-    score.toFixed(1) +
-    "%";
+/* =====================================================
+   START
+   ===================================================== */
 
-}
-
-
-/* =====================================
-   JAVASCRIPT TEST
-===================================== */
-
-console.log(
-  "Deriv Match Analyzer loaded successfully."
-);
+connect();
 
 </script>
 
